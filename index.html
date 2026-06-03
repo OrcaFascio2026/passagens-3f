@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Análise Passagens 2026 · 3F</title>
+<title>Análise Resultados 2026 · 3F</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -276,7 +276,7 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
 <!-- Login -->
 <div id="loginScreen" style="display:none">
   <div class="login-card">
-    <div class="login-logo">Análise <span>Passagens</span></div>
+    <div class="login-logo">Análise <span>Resultados</span></div>
     <div class="login-sub">3F Ltda · 2026</div>
     <div class="login-field">
       <label>E-mail</label>
@@ -294,7 +294,7 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
 
 <!-- Top bar -->
 <div id="topBar">
-  <div class="topbar-brand">Análise <span>Passagens</span></div>
+  <div class="topbar-brand">Análise <span>Resultados</span></div>
   <div class="topbar-spacer"></div>
   <div class="sync-dot" id="syncDot" title="Sincronização em tempo real"></div>
   <div class="topbar-user">
@@ -307,7 +307,7 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
 <!-- App -->
 <div id="appScreen">
   <header class="page-header">
-    <h1>Análise<br><span>Passagens</span></h1>
+    <h1>Análise<br><span>Resultados</span></h1>
     <div class="header-actions">
       <div style="font-size:13px;color:var(--ink3);line-height:1.6">3F Ltda · 2026</div>
       <div style="display:flex;gap:8px">
@@ -408,6 +408,17 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
       </table>
     </div>
   </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:0">
+    <div class="card">
+      <div class="card-title">Distribuição do valor fechado — ano</div>
+      <div class="donut-wrap"><canvas id="chartHistDonut"></canvas><div class="donut-center"><strong id="histDonutCenter">—</strong><span>total</span></div></div>
+      <div class="legend" style="justify-content:center;margin-top:16px" id="histDonutLegend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fechamentos por tipo — ano</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartHistFech"></canvas></div>
+    </div>
+  </div>
 </div>
 
 <!-- DADOS GESTÃO VIEW -->
@@ -441,7 +452,7 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
   </div>
 </div>
 
-<footer>Análise Passagens 2026 · 3F Ltda</footer>
+<footer>Análise Resultados 2026 · 3F Ltda</footer>
 </div>
 
 <!-- Painel DB -->
@@ -449,12 +460,12 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
   <div class="panel-header">
     <div class="panel-title">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="7" width="12" height="3" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="12" width="12" height="2" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
-      Banco de Dados — Passagens
+      Banco de Dados — Resultados
     </div>
     <button class="panel-close" onclick="togglePanel()">✕</button>
   </div>
   <div class="panel-main-tabs">
-    <div class="panel-main-tab active" id="ptabDados" onclick="switchMainTab('dados')">📋 Passagens</div>
+    <div class="panel-main-tab active" id="ptabDados" onclick="switchMainTab('dados')">📋 Resultados</div>
     <div class="panel-main-tab" id="ptabOrigens" onclick="switchMainTab('origens')">📍 Origens</div>
   </div>
   <div class="panel-month-tabs" id="panelMonthTabs"></div>
@@ -511,15 +522,15 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const MESES_KEYS=['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const MESES_LABELS={janeiro:'Janeiro',fevereiro:'Fevereiro',marco:'Março',abril:'Abril',maio:'Maio',junho:'Junho',julho:'Julho',agosto:'Agosto',setembro:'Setembro',outubro:'Outubro',novembro:'Novembro',dezembro:'Dezembro'};
 const CS_LIST=['gabriel','caio','giovanni'];
-const TIPO_OPTS=['Renovação','Churn','Upsell','Antecipação','Venda','Aquisição','Outro'];
-const TIPO_COR={Renovação:'#4B9EE8',Churn:'#E05A5A',Upsell:'#3EC99A',Antecipação:'#F0A44A',Venda:'#9B7FE8',Aquisição:'#9B7FE8',Outro:'#8892A8'};
+const TIPO_OPTS=['Renovação','Churn','Risco Churn','Upsell','Antecipação','Aquisição','Outro'];
+const TIPO_COR={Renovação:'#4B9EE8',Churn:'#E05A5A','Risco Churn':'#FF8C42',Upsell:'#3EC99A',Antecipação:'#F0A44A',Aquisição:'#9B7FE8',Outro:'#8892A8'};
 
 let currentUser=null, currentPerfil=null;
 let allPassagens=[];
 let pendingRows=[];
 let _mesAtivo=null,_segAtivo='geral',_dbMes='abril',_dbCS='gabriel',_dbSeg='b2b',_panelMainTab='dados';
 let realtimeSub=null;
-let chartPassagens,chartDonut,chartTicket;
+let chartPassagens,chartDonut,chartTicket,chartHistDonut,chartHistFech;
 
 const fmt=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
 const fmtK=v=>v>=1000?'R$ '+Math.round(v/1000)+'k':fmt(v);
@@ -528,9 +539,12 @@ const gridColor='rgba(255,255,255,0.05)',tickColor='#50586E',tickFont={size:11,f
 function normTipo(t){
   if(!t)return'Outro';
   const k=t.trim().toLowerCase().replace(/[áàãâä]/g,'a').replace(/[éèê]/g,'e').replace(/[íì]/g,'i').replace(/[óòõô]/g,'o').replace(/[úùû]/g,'u');
-  if(k.startsWith('renov'))return'Renovação';if(k.startsWith('churn'))return'Churn';
-  if(k.startsWith('ups'))return'Upsell';if(k.startsWith('antec')||k.startsWith('adiant'))return'Antecipação';
-  if(k.startsWith('aquis'))return'Aquisição';if(k.startsWith('vend'))return'Venda';
+  if(k.startsWith('risco'))return'Risco Churn';
+  if(k.startsWith('renov'))return'Renovação';
+  if(k.startsWith('churn'))return'Churn';
+  if(k.startsWith('ups'))return'Upsell';
+  if(k.startsWith('antec')||k.startsWith('adiant'))return'Antecipação';
+  if(k.startsWith('aquis')||k.startsWith('vend'))return'Aquisição';
   return t.trim()||'Outro';
 }
 function corTipo(t){return TIPO_COR[normTipo(t)]||'#8892A8';}
@@ -704,7 +718,24 @@ function initCharts(){
   });
   chartDonut=new Chart(document.getElementById('chartDonut'),{
     type:'doughnut',data:{labels:[],datasets:[{data:[],backgroundColor:[],borderWidth:2,borderColor:'#161B26',hoverOffset:8}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed)}}}}
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
+  const ds=c.chart.data.datasets[0];
+  const fechs=ds.fechamentos||[];
+  const f=fechs[c.dataIndex]||0;
+  return[fmt(c.parsed),'Fechamentos: '+f];
+}}}}}
+  });
+  chartHistDonut=new Chart(document.getElementById('chartHistDonut'),{
+    type:'doughnut',data:{labels:[],datasets:[{data:[],backgroundColor:[],borderWidth:2,borderColor:'#161B26',hoverOffset:8,fechamentos:[]}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
+      const f=c.chart.data.datasets[0].fechamentos[c.dataIndex]||0;
+      return[fmt(c.parsed),'Fechamentos: '+f];
+    }}}}}
+  });
+  chartHistFech=new Chart(document.getElementById('chartHistFech'),{
+    type:'bar',data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:[],borderWidth:1.5,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+' fechamentos'}}},
+      scales:{x:{grid:{display:false},ticks:{color:tickColor,font:tickFont}},y:{grid:{color:gridColor},ticks:{color:tickColor,font:tickFont}}}}
   });
   chartTicket=new Chart(document.getElementById('chartTicket'),{
     type:'bar',data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:[],borderWidth:1.5,borderRadius:6}]},
@@ -751,7 +782,11 @@ function renderDashboard(){
   document.getElementById('legendPass').innerHTML=data.map(d=>'<span class="legend-item"><span class="legend-dot" style="background:'+d.cor+'"></span>'+d.tipo+'</span>').join('');
   chartPassagens.data.labels=data.map(d=>d.tipo);chartPassagens.data.datasets[0].data=data.map(d=>d.passagens);
   chartPassagens.data.datasets[0].backgroundColor=data.map(d=>d.cor+'55');chartPassagens.data.datasets[0].borderColor=data.map(d=>d.cor);chartPassagens.update();
-  chartDonut.data.labels=data.map(d=>d.tipo);chartDonut.data.datasets[0].data=data.map(d=>d.valorTotal);chartDonut.data.datasets[0].backgroundColor=data.map(d=>d.cor);chartDonut.update();
+  chartDonut.data.labels=data.map(d=>d.tipo);
+  chartDonut.data.datasets[0].data=data.map(d=>d.valorTotal);
+  chartDonut.data.datasets[0].backgroundColor=data.map(d=>d.cor);
+  chartDonut.data.datasets[0].fechamentos=data.map(d=>d.fechamentos);
+  chartDonut.update();
   const td=data.filter(d=>d.fechamentos>0).slice().sort((a,b)=>b.ticketMedio-a.ticketMedio);
   chartTicket.data.labels=td.map(d=>d.tipo);chartTicket.data.datasets[0].data=td.map(d=>d.ticketMedio);
   chartTicket.data.datasets[0].backgroundColor=td.map(d=>d.cor+'55');chartTicket.data.datasets[0].borderColor=td.map(d=>d.cor);chartTicket.update();
@@ -860,6 +895,29 @@ function renderDBGrid(){
   const total=allPassagens.filter(r=>r.mes===_dbMes).length+pendingRows.filter(r=>r.mes===_dbMes).length;
   document.getElementById('dbInfo').textContent=existingRows.length+' linhas salvas · '+pendingRows.filter(r=>r.mes===_dbMes&&r.cs===_dbCS&&r.seg===_dbSeg).length+' novas · '+total+' total no mês';
   document.getElementById('checkAll').checked=false;
+  // Mark duplicate link rows after render
+  markDupRows();
+}
+
+function markDupRows(){
+  const linkCount={};
+  allPassagens.filter(r=>r.mes===_dbMes).forEach(r=>{
+    if(r.link) linkCount[r.link]=(linkCount[r.link]||0)+1;
+  });
+  // Also count pending rows
+  pendingRows.filter(r=>r.mes===_dbMes).forEach(r=>{
+    if(r.link) linkCount[r.link]=(linkCount[r.link]||0)+1;
+  });
+  document.querySelectorAll('#dbBody tr').forEach(tr=>{
+    const linkInput=tr.querySelector('input[data-f="link"]');
+    if(!linkInput)return;
+    const link=(linkInput.value||'').trim();
+    if(link&&linkCount[link]>1){
+      tr.classList.add('dup-link');
+    } else {
+      tr.classList.remove('dup-link');
+    }
+  });
 }
 
 // Uses unique _pid to identify pending rows without index confusion
@@ -1009,11 +1067,11 @@ function exportHTML(){
 
   const origRows=origs.length?origs.map(o=>'<tr><td style="padding:10px 14px;border-bottom:1px solid #252D44;font-weight:500;color:#E2E6F0">'+o.orig+'</td><td style="padding:10px 14px;border-bottom:1px solid #252D44;text-align:right;color:#E2E6F0">'+o.passagens+'</td><td style="padding:10px 14px;border-bottom:1px solid #252D44;text-align:right;color:#E2E6F0">'+o.fechamentos+'</td><td style="padding:10px 14px;border-bottom:1px solid #252D44;text-align:right;color:#E2E6F0">'+o.taxa+'%</td><td style="padding:10px 14px;border-bottom:1px solid #252D44;text-align:right;color:#E2E6F0">'+fmt2(o.valorTotal)+'</td></tr>').join(''):'';
 
-  const html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Análise Passagens '+mesLabel+' 2026</title><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0}html,body{background:#0D1117;color:#E2E6F0;font-family:DM Sans,sans-serif;padding:40px 48px}.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.07)}h1{font-family:DM Serif Display,serif;font-size:38px;font-weight:400;line-height:1.1}h1 span{color:#4B9EE8}.sub{font-size:13px;color:#50586E}.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}.kpi{background:#161B26;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px 24px;position:relative;overflow:hidden}.kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px}.kpi:nth-child(1)::after{background:#4B9EE8}.kpi:nth-child(2)::after{background:#3EC99A}.kpi:nth-child(3)::after{background:#F0A44A}.kpi:nth-child(4)::after{background:#E05A5A}.kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:#50586E;margin-bottom:8px}.kpi-value{font-family:DM Serif Display,serif;font-size:32px;font-weight:400;color:#E2E6F0;line-height:1}.kpi-sub{font-size:11px;color:#50586E;margin-top:6px}.card{background:#161B26;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px}.card-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:#50586E;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:#50586E;padding:0 14px 12px;border-bottom:1px solid rgba(255,255,255,0.07)}thead th:not(:first-child){text-align:right}footer{margin-top:40px;font-size:12px;color:#50586E;text-align:center;padding-top:20px;border-top:1px solid rgba(255,255,255,0.07)}</style></head><body><div class="header"><h1>Análise<br><span>Passagens</span></h1><div class="sub">3F Ltda · '+mesLabel+' 2026 · '+segLabel+'</div></div><div class="kpi-row"><div class="kpi"><div class="kpi-label">Total de passagens</div><div class="kpi-value">'+totalPass+'</div><div class="kpi-sub">em '+data.length+' tipos</div></div><div class="kpi"><div class="kpi-label">Valor total fechado</div><div class="kpi-value">'+fmt2(totalVal)+'</div><div class="kpi-sub">em '+totalFech+' fechamentos</div></div><div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value">'+fmt2(ticketG)+'</div><div class="kpi-sub">por fechamento</div></div><div class="kpi"><div class="kpi-label">Taxa de fechamento</div><div class="kpi-value">'+taxa+'%</div><div class="kpi-sub">'+totalFech+' de '+totalPass+'</div></div></div><div class="card"><div class="card-title">Comparativo por tipo</div><table><thead><tr><th>Tipo</th><th>Passagens</th><th>Fechamentos</th><th>Taxa</th><th>Valor total</th><th>Ticket médio</th></tr></thead><tbody>'+tipoRows+'</tbody></table></div>'+(origs.length?'<div class="card"><div class="card-title">Conversão por Origem</div><table><thead><tr><th>Origem</th><th>Passagens</th><th>Fechamentos</th><th>Taxa</th><th>Valor total</th></tr></thead><tbody>'+origRows+'</tbody></table></div>':'')+'<footer>Análise Passagens 2026 · 3F Ltda · Exportado em '+new Date().toLocaleDateString('pt-BR')+'</footer></body></html>';
+  const html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Análise Resultados '+mesLabel+'' 2026</title><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0}html,body{background:#0D1117;color:#E2E6F0;font-family:DM Sans,sans-serif;padding:40px 48px}.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.07)}h1{font-family:DM Serif Display,serif;font-size:38px;font-weight:400;line-height:1.1}h1 span{color:#4B9EE8}.sub{font-size:13px;color:#50586E}.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}.kpi{background:#161B26;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px 24px;position:relative;overflow:hidden}.kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px}.kpi:nth-child(1)::after{background:#4B9EE8}.kpi:nth-child(2)::after{background:#3EC99A}.kpi:nth-child(3)::after{background:#F0A44A}.kpi:nth-child(4)::after{background:#E05A5A}.kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:#50586E;margin-bottom:8px}.kpi-value{font-family:DM Serif Display,serif;font-size:32px;font-weight:400;color:#E2E6F0;line-height:1}.kpi-sub{font-size:11px;color:#50586E;margin-top:6px}.card{background:#161B26;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;margin-bottom:20px}.card-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:#50586E;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:#50586E;padding:0 14px 12px;border-bottom:1px solid rgba(255,255,255,0.07)}thead th:not(:first-child){text-align:right}footer{margin-top:40px;font-size:12px;color:#50586E;text-align:center;padding-top:20px;border-top:1px solid rgba(255,255,255,0.07)}</style></head><body><div class="header"><h1>Análise<br><span>Resultados</span></h1><div class="sub">3F Ltda · '+mesLabel+' 2026 · '+segLabel+'</div></div><div class="kpi-row"><div class="kpi"><div class="kpi-label">Total de passagens</div><div class="kpi-value">'+totalPass+'</div><div class="kpi-sub">em '+data.length+' tipos</div></div><div class="kpi"><div class="kpi-label">Valor total fechado</div><div class="kpi-value">'+fmt2(totalVal)+'</div><div class="kpi-sub">em '+totalFech+' fechamentos</div></div><div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value">'+fmt2(ticketG)+'</div><div class="kpi-sub">por fechamento</div></div><div class="kpi"><div class="kpi-label">Taxa de fechamento</div><div class="kpi-value">'+taxa+'%</div><div class="kpi-sub">'+totalFech+' de '+totalPass+'</div></div></div><div class="card"><div class="card-title">Comparativo por tipo</div><table><thead><tr><th>Tipo</th><th>Passagens</th><th>Fechamentos</th><th>Taxa</th><th>Valor total</th><th>Ticket médio</th></tr></thead><tbody>'+tipoRows+'</tbody></table></div>'+(origs.length?'<div class="card"><div class="card-title">Conversão por Origem</div><table><thead><tr><th>Origem</th><th>Passagens</th><th>Fechamentos</th><th>Taxa</th><th>Valor total</th></tr></thead><tbody>'+origRows+'</tbody></table></div>':'')+'<footer>Análise Resultados 2026 · 3F Ltda · Exportado em '+new Date().toLocaleDateString('pt-BR')+'</footer></body></html>';
 
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='Passagens_'+mesLabel+'_'+segLabel+'_'+new Date().toISOString().slice(0,10)+'.html';a.click();
+  a.download='Resultados_'+mesLabel+'_'+segLabel+'_'+new Date().toISOString().slice(0,10)+'.html';a.click();
   showToast('HTML exportado');
 }
 
@@ -1048,7 +1106,7 @@ function exportExcel(){
   ws2['!cols']=[{wch:10},{wch:10},{wch:10},{wch:12},{wch:12},{wch:12},{wch:14},{wch:50},{wch:10},{wch:16},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws1,'Resumo por Tipo');
   XLSX.utils.book_append_sheet(wb,ws2,'Passagens Brutas');
-  XLSX.writeFile(wb,'Passagens_'+mesLabel+'_'+segLabel+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  XLSX.writeFile(wb,'Resultados_'+mesLabel+'_'+segLabel+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
   showToast('Excel exportado');
 }
 
@@ -1189,6 +1247,28 @@ function renderHistorico(){
     tr.innerHTML='<td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:'+d.cor+';display:inline-block"></span>'+d.tipo+'</span></td><td>'+d.passagens+'</td><td>'+d.fechamentos+'</td><td>'+t+'%</td><td>'+fmt(d.valorTotal)+'</td><td>'+(d.fechamentos>0?fmt(d.ticketMedio):'—')+'</td>';
     tbody2.appendChild(tr);
   });
+
+  // Update donut and bar charts for historico
+  const tipoFech=tipoData.filter(d=>d.fechamentos>0);
+  if(chartHistDonut){
+    chartHistDonut.data.labels=tipoFech.map(d=>d.tipo);
+    chartHistDonut.data.datasets[0].data=tipoFech.map(d=>d.valorTotal);
+    chartHistDonut.data.datasets[0].backgroundColor=tipoFech.map(d=>d.cor);
+    chartHistDonut.data.datasets[0].fechamentos=tipoFech.map(d=>d.fechamentos);
+    chartHistDonut.update();
+    document.getElementById('histDonutCenter').textContent=fmtK(totalVal);
+    document.getElementById('histDonutLegend').innerHTML=tipoFech.map((d,i)=>{
+      const pct=totalVal>0?Math.round(d.valorTotal/totalVal*100):0;
+      return '<span class="legend-item"><span class="legend-dot" style="background:'+d.cor+'"></span>'+d.tipo+' '+pct+'%</span>';
+    }).join('');
+  }
+  if(chartHistFech){
+    chartHistFech.data.labels=tipoFech.map(d=>d.tipo);
+    chartHistFech.data.datasets[0].data=tipoFech.map(d=>d.fechamentos);
+    chartHistFech.data.datasets[0].backgroundColor=tipoFech.map(d=>d.cor+'55');
+    chartHistFech.data.datasets[0].borderColor=tipoFech.map(d=>d.cor);
+    chartHistFech.update();
+  }
 }
 
 // ── DADOS GESTÃO
