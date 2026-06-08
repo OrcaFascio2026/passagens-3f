@@ -313,7 +313,11 @@ footer{margin-top:40px;font-size:12px;color:var(--ink3);text-align:center;paddin
     <div class="header-actions">
       <div style="font-size:13px;color:var(--ink3);line-height:1.6">3F Ltda · 2026</div>
       <div style="display:flex;gap:8px">
-        <button class="btn-export" onclick="exportPDF()">
+        <button class="btn-export" onclick="exportBackup()" title="Backup completo — todas as passagens de todos os meses">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8m0 0L5 7m3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Backup
+        </button>
+      <button class="btn-export" onclick="exportPDF()">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0L5 7m3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           PDF
         </button>
@@ -1086,6 +1090,56 @@ function renderOrigensPanel(){
 // ── EXPORT
 function exportPDF(){
   window.print();
+}
+
+function exportBackup(){
+  if(!allPassagens.length){showToast('Nenhuma passagem no banco');return;}
+  const btn=event.target.closest('button');
+  if(btn){btn.textContent='⏳ Gerando...';btn.disabled=true;}
+
+  const headers=['Mês','CS','Segmento','Origem','Data Envio','Data Pagto','Tipo','Link Empresa','Comprou','Fechamento (R$)','Vendedor','Anotações'];
+  const dataRows=allPassagens.map(r=>[
+    MESES_LABELS[r.mes]||r.mes,
+    r.cs?r.cs.charAt(0).toUpperCase()+r.cs.slice(1):'',
+    (r.seg||'').toUpperCase(),
+    r.orig||'',r.data_envio||'',r.data_pag||'',r.tipo||'',
+    r.link||'',r.comprou||'Não',Number(r.fechamento)||0,
+    r.vendedor||'',r.notas||''
+  ]);
+
+  // Sort by mes, cs, seg
+  const mesOrder=MESES_KEYS;
+  dataRows.sort((a,b)=>{
+    const mi=mesOrder.indexOf(allPassagens[dataRows.indexOf(a)]?.mes||'');
+    const mj=mesOrder.indexOf(allPassagens[dataRows.indexOf(b)]?.mes||'');
+    return mi-mj;
+  });
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([headers,...dataRows]);
+  ws['!cols']=[{wch:12},{wch:10},{wch:8},{wch:12},{wch:12},{wch:12},{wch:14},{wch:55},{wch:10},{wch:14},{wch:14},{wch:20}];
+
+  // Add totals row
+  const totalFech=allPassagens.reduce((s,r)=>s+(Number(r.fechamento)||0),0);
+  const totalRows=allPassagens.length;
+  const totalSim=allPassagens.filter(r=>(r.comprou||'').toLowerCase()==='sim').length;
+  ws['!ref']='A1:L'+(dataRows.length+3);
+  XLSX.utils.sheet_add_aoa(ws,[
+    [],
+    ['TOTAL',totalRows+' passagens','','','','','',totalSim+' fechamentos','',totalFech,'','']
+  ],{origin:-1});
+
+  XLSX.utils.book_append_sheet(wb,ws,'Backup Completo');
+  const date=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'Backup_Resultados_'+date+'.xlsx');
+
+  setTimeout(()=>{
+    if(btn){
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8m0 0L5 7m3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Backup';
+      btn.disabled=false;
+    }
+  },1000);
+  showToast('✓ Backup gerado — '+totalRows+' passagens · R$ '+Math.round(totalFech).toLocaleString('pt-BR'));
 }
 
 function exportHTML(){
